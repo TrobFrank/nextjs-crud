@@ -1,3 +1,20 @@
+:root {
+  --lightgreen: #2ec491;
+  --darkgreen: #0a5640;
+  --graygreen: #588c7d;
+  --gray: #a6c3bb;
+  --white: #f5faf9;
+}
+
+.bg-lightgreen    {background-color:var(--lightgreen);}
+.text-lightgreen  {color:var(--lightgreen);}
+.bg-darkgreen     {background-color:var(--darkgreen);}
+.text-darkgreen   {color:var(--darkgreen);}
+.bg-graygreen     {background-color:var(--graygreen);}
+.text-graygreen   {color:var(--graygreen);}
+.bg-gray          {background-color:var(--gray);}
+.text-gray        {color:var(--gray);}
+
 html,
 body {
   padding: 0;
@@ -23,4 +40,24 @@ a {
     color: white;
     background: black;
   }
+}
+
+.map-container {
+  width:60vw;
+  height:100vh;
+}
+
+.side-bar {
+  background:white;
+  overflow-y: auto;
+  box-shadow: 0px -10px -5px rgba(0,0,0,0.5);
+  width:40vw;
+  height:100vh;
+  padding:1em;
+}
+
+.flex-row {
+  display:flex;
+  flex-direction: row;
+  flex-wrap:nowrap;
 }
