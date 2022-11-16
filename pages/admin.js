@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@mui/material';
+import Header from '../components/Header';
+
+
+import connectMongo from '../utils/db/connectMongo';
+import Location from '../models/Location';
 
 export default function Admin(props){
 
@@ -20,6 +25,11 @@ export default function Admin(props){
         setFormData({...formData, [e.target.name]: e.target.value});
     }
 
+
+    useEffect(() => {
+        getLocations();
+    },[])
+
     function getLocations() {
         setLoading(true)
         fetch('/api/location')
@@ -38,7 +48,7 @@ export default function Admin(props){
         }
 
         let res = await fetch('/api/location/create', options)
-        .then(res =>{
+        .then(res => {
             res.json();
             setFormData(defaultFormState);
             setLocationData(getLocations());
@@ -51,6 +61,7 @@ export default function Admin(props){
 
     return (
         <div className={``}>
+            <Header />
             <form id="formName">
                 <input type="text" required name="title" placeholder="Title" value={formData.title} onChange={(e)=>handleFormInputChange(e)} /><br/>
                 <input type="text" name="description" placeholder="Description" value={formData.description}  onChange={(e)=>handleFormInputChange(e)} /><br/>
@@ -61,7 +72,7 @@ export default function Admin(props){
             </form>
             <main className={``}>
                 <div className={``}>
-                { locationData.length > 0 ?
+                { locationData.length > 0 && !isLoading ?
                 locationData.map(loc => {
                     return <div key={loc._id} className={``}>
                         {loc.image? <Image src={loc.image} alt={loc.title} width='160' height='90'/> : null}
@@ -76,3 +87,20 @@ export default function Admin(props){
         </div>
     )
 }
+
+export const getServerSideProps = async () => {
+    try {
+        await connectMongo();
+        let locations = await Location.find();
+        return {
+            props: {
+                locations: JSON.parse(JSON.stringify(locations))
+            }
+        }
+    } catch (error){
+        console.log(error);
+        return {
+            notFound: true
+        }
+    }
+  }

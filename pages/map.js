@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { GoogleMap, useLoadScript } from '@react-google-maps/api';
+import Header from '../components/Header';
 import SideBar from "../components/Sidebar";
 import LocationElement  from '../components/LocationElement';
 
@@ -50,21 +51,24 @@ function MapElement({locations, center}){
     }
 
     return (
-        <div className="flex-row">
-            <GoogleMap 
-                zoom={10} 
-                center={center} 
-                mapContainerClassName="map-container"
-                onLoad={(map) => handleOnLoad(map)}
-                onIdle={() => handleOnIdle()}
-            >
-                { locations.length > 0 && 
-                    locations.map(loc=>{
-                        return <LocationElement location={loc} key={loc._id}/>
-                    })
-                }
-            </GoogleMap>
-            <SideBar locations={locationsInSidebar}/>
+        <div className="page_map">
+            <Header />
+            <div className="flex-row map-wrapper">
+                <GoogleMap 
+                    zoom={10} 
+                    center={center} 
+                    mapContainerClassName="map-container"
+                    onLoad={(map) => handleOnLoad(map)}
+                    onIdle={() => handleOnIdle()}
+                >
+                    { locations.length > 0 && 
+                        locations.map(loc=>{
+                            return <LocationElement location={loc} key={loc._id}/>
+                        })
+                    }
+                </GoogleMap>
+                <SideBar locations={locationsInSidebar}/>
+            </div>
         </div>
     )
 }
