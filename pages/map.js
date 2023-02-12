@@ -1,12 +1,9 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
+import axios from "axios";
 import { GoogleMap, useLoadScript } from '@react-google-maps/api';
 import Header from '../components/Header';
 import SideBar from "../components/Sidebar";
 import LocationElement  from '../components/LocationElement';
-
-//server
-import connectMongo from '../utils/db/connectMongo';
-import Location from '../models/Location';
 
 export default function Map(props){
     const center        = useMemo(() => ({lat: 39.10146959718684, lng: -84.51280154753815}));
@@ -73,20 +70,17 @@ function MapElement({locations, center}){
     )
 }
 
-export const getServerSideProps = async () => {
-    try {
-        await connectMongo();
-        let locations = await Location.find();
-        console.log(locations);
-        return {
-            props: {
-                locations: JSON.parse(JSON.stringify(locations))
-            }
-        }
-    } catch (error){
-        console.log(error);
-        return {
-            notFound: true
-        }
-    }
+export const getServerSideProps = async (req) => {
+    const { URL } = process.env;
+    let res = await axios.get(`${URL}/api/location`)
+        .then((res) => {
+            console.log('getServerSideProps');
+            return {
+                props: {
+                    locations: JSON.parse(JSON.stringify(res.data))
+                }
+            }          
+        })
+    return res;
+
   }

@@ -1,59 +1,103 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import axios from 'axios';
+import { apiGetLocations } from './api/location';
 import Image from 'next/image';
 import { Button } from '@mui/material';
 import Header from '../components/Header';
-
-
-import connectMongo from '../utils/db/connectMongo';
-import Location from '../models/Location';
+import AdminLocationCard from '../components/AdminLocationCard';
 
 export default function Admin(props){
 
-    const defaultFormState = {
+    const defaultNewLoc = {
         title:'',
         description:'',
         image:'',
+        type:'',
         latitude:'',
         longitude:''
     }
 
     const [isLoading, setLoading] = useState(false);
-    const [formData, setFormData] = useState(defaultFormState);
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState(defaultNewLoc);
     const [locationData, setLocationData] = useState(props.locations);
 
     function handleFormInputChange(e){
         setFormData({...formData, [e.target.name]: e.target.value});
     }
 
-
-    useEffect(() => {
-        getLocations();
-    },[])
-
-    function getLocations() {
+    async function getLocations(id) {
         setLoading(true)
-        fetch('/api/location')
-          .then((res) => res.json())
-          .then((data) => {
-            setLocationData(data.locationData)
-            setLoading(false)
-          })
+        let reqOptions = {};
+        if (id !== null) {reqOptions = {_id: id};}
+        let locationRes = await axios.post('/api/location', reqOptions)
+            .then(res => {
+                console.log('getLocations res.data: ', res.data);
+                setLoading(false)
+                return res.data
+            }).catch(e =>  {
+                console.log(e);
+            })
+        return locationRes
     }
 
     async function createLocation(e){
         e.preventDefault();
-        let options = {
-            method: 'POST',
-            body: JSON.stringify(formData)
-        }
+        let res = await axios.post('/api/location/create', formData)
+            .then(res => {
+                console.log('createLocation res.data: ', res.data)
+                setFormData(defaultNewLoc);
+                return res
+            })
+            .catch(err => {
+                console.log(err)
+            })
+        let newLocationList = await getLocations();
+        setLocationData(newLocationList);
+        return res;
+    }
 
-        let res = await fetch('/api/location/create', options)
-        .then(res => {
-            res.json();
-            setFormData(defaultFormState);
-            setLocationData(getLocations());
+    async function deleteLocationByID(title, id){
+        if (!id) return;
+        if (confirm(`delete ${title?title:id}?`) === true){
+            let res = await axios.post('/api/location/delete', {_id: id})
+                .then(res => {
+                    console.log('deleteLocation res.data: ', res.data)
+                    return res
+                })
+                .catch(err => {
+                    console.log(err)
+                })
+        
+            let newLocationList = await getLocations();
+            setLocationData(newLocationList);
+
+            return res;
+        }
+        return
+    }
+
+    async function saveEditedLocationByID(id, data){
+        if (!id) return;
+        let res = await axios.put('/api/location/update', {
+            _id: id,
+            title: data.title,
+            description: data.description,
+            image: data.image,
+            type: data.type,
+            latitude: data.latitude,
+            longitude: data.longitude,
+        }).then(res => {
+            console.log(res);
         })
-        .catch(err => {console.log(err)})
+
+        let newLocation = await getLocations(id);
+        console.log('saveEditedLocationByID newLocation: ', newLocation);
+        let newLocationList = locationData.map(loc =>{
+            if (loc._id === id){loc = newLocation;}
+            return loc;
+        })
+        setLocationData(newLocationList);        
         return res;
     }
 
@@ -66,6 +110,7 @@ export default function Admin(props){
                 <input type="text" required name="title" placeholder="Title" value={formData.title} onChange={(e)=>handleFormInputChange(e)} /><br/>
                 <input type="text" name="description" placeholder="Description" value={formData.description}  onChange={(e)=>handleFormInputChange(e)} /><br/>
                 <input type="text" name="image" placeholder="Image URL" value={formData.image} onChange={(e)=>handleFormInputChange(e)} /><br/>
+                <input type="text" name="type" placeholder="recycling or trash" value={formData.type} onChange={(e)=>handleFormInputChange(e)} /><br/>
                 <input type="number" required name="latitude" placeholder="Latitude" value={formData.latitude} onChange={(e)=>handleFormInputChange(e)} /><br/>
                 <input type="number" required name="longitude" placeholder="Longitude" value={formData.longitude} onChange={(e)=>handleFormInputChange(e)} /><br/>
                 <Button variant="contained" onClick={(e)=>{createLocation(e)}}>Add Location</Button>
@@ -74,11 +119,12 @@ export default function Admin(props){
                 <div className={``}>
                 { locationData.length > 0 && !isLoading ?
                 locationData.map(loc => {
-                    return <div key={loc._id} className={``}>
-                        {loc.image? <Image src={loc.image} alt={loc.title} width='160' height='90'/> : null}
-                        <h2>{loc.title}</h2>
-                        <p>{loc.description}</p>
-                    </div>
+                    return <AdminLocationCard 
+                    key={loc._id}
+                    {...loc} 
+                    deleteLoc={deleteLocationByID}
+                    saveLoc={saveEditedLocationByID}
+                    />
                 })
                 : null
                 }
@@ -88,19 +134,12 @@ export default function Admin(props){
     )
 }
 
+
 export const getServerSideProps = async () => {
-    try {
-        await connectMongo();
-        let locations = await Location.find();
-        return {
-            props: {
-                locations: JSON.parse(JSON.stringify(locations))
-            }
+    let res = await apiGetLocations();
+    return {
+        props: {
+            locations: JSON.parse(JSON.stringify(res))
         }
-    } catch (error){
-        console.log(error);
-        return {
-            notFound: true
-        }
-    }
+    }  
   }
